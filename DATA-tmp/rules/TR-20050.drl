@@ -1,0 +1,39 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import org.apache.commons.lang3.StringUtils;
+import eu.europa.ec.taxud.dac7.validation.Constants
+import eu.europa.ec.taxud.dac7.utils.DroolsUtils
+import java.util.List
+import java.util.Set
+import java.lang.String
+import java.util.HashSet
+import java.util.regex.Matcher
+import java.util.regex.Pattern;
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import org.w3c.dom.Node
+import oecd.ties.dpi.v1.DPIMessageTypeIndicEnumType;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+
+dialect "java"
+
+rule "TR-20050"
+
+    when
+     $element : Element("DPIBody" == getLocalName())
+     $context : ValidationContext( )
+     $xpath   : XPath() from $context.getProperty("XPATH")
+    then
+    List<Element> reportableSellers = XmlUtils.findElements($context, $element, "//dpi:ReportableSeller");
+    String messageTypeIndic = (String) $context.getProperty(Constants.MESSAGE_TYPE_INDIC);
+    if (DPIMessageTypeIndicEnumType.DPI_403.value().equals(messageTypeIndic) && !reportableSellers.isEmpty()) {
+        String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+        addError($context, ErrorCode.BR_OPO_006, docTypeIndic, $element);
+    }
+end

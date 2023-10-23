@@ -1,0 +1,23 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants;
+
+dialect "java"
+
+rule "DAC7-OTHER-PLATFORM-OPERATOR"
+auto-focus true
+
+	when
+        $element : Element("DPIBody" == getLocalName())
+        $context : ValidationContext()
+        $xpath   : XPath() from $context.getProperty("XPATH")
+        $docRefIdElement: Element() from $xpath.compile("//dpi:DocSpec/stf:DocRefId").evaluate($element, XPathConstants.NODE)
+        $docRefId : String() from $docRefIdElement.getTextContent()
+        $otherPlatformOperator : Element() from $xpath.compile("//dpi:OtherPlatformOperators").evaluate($element, XPathConstants.NODE)
+    then
+        $context.setProperty(Constants.OTHER_PLATFORM_OPERATOR, $otherPlatformOperator);
+end

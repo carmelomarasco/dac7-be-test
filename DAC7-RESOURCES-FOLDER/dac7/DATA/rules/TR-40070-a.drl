@@ -1,0 +1,63 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import java.util.Date
+import java.util.Calendar
+import java.text.SimpleDateFormat;
+import org.w3c.dom.Node
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import java.util.Set
+import java.util.HashSet;
+
+dialect "java"
+
+rule "TR-40170-a"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+	when
+        $elementES : Element() from XmlUtils.findElements($context, $element, "//dpi:ReportableSeller/dpi:Identity/dpi:EntitySeller/dpi:Standard/dpi:EntSellerID")
+    then
+        Object receivingCountriesObject = $context.getProperty(Constants.RECEIVING_COUNTRY);
+
+        Set<String> receivingCountriesSet = new HashSet<>();
+        if (receivingCountriesObject instanceof String) {
+            receivingCountriesSet.add(receivingCountriesObject.toString());
+        }
+        else{
+            receivingCountriesSet = (Set)receivingCountriesObject;
+        }
+
+        List<Element> relevantActivitiesLocation = XmlUtils.findElements($context, $element, "//dpi:ReportableSeller/dpi:RelevantActivities/dpi:ImmovableProperty/dpi:PropertyListing/dpi:Address/dpi:CountryCode");
+        boolean relevantActivitiesLocationContainsReceivingCountries = false;
+        for (final Element elemRelevantActivitiesLocation : relevantActivitiesLocation){
+            if (receivingCountriesSet.contains(elemRelevantActivitiesLocation.getTextContent())) {
+                relevantActivitiesLocationContainsReceivingCountries = true;
+                break;
+            }
+        }
+
+        if (!relevantActivitiesLocationContainsReceivingCountries) {
+            boolean resCountryContainsReceivingCountries = false;
+            List<Element> resCountryCodes = XmlUtils.findElements($context, $elementES, "dpi:ResCountryCode");
+            for (final Element elemResCountryCode : resCountryCodes){
+               if (receivingCountriesSet.contains(elemResCountryCode.getTextContent())) {
+                   resCountryContainsReceivingCountries = true;
+                   break;
+               }
+            }
+
+            if (!resCountryCodes.isEmpty() && !resCountryContainsReceivingCountries) {
+                String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                addError($context, ErrorCode.BR_PAR007A, docTypeIndic, $elementES);
+            }
+        }
+end

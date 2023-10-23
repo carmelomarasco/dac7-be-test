@@ -1,0 +1,62 @@
+
+national:
+  topics:
+    err:
+    command:
+      # UPDATE_NOTES
+      - UPDATE_STATUS: # Richiesta di cambio di stato
+          headers: [ REPORTING_PERIOD, COM_UUID, PREVIOUS_STATUS, MESSAGE_TYPE_INDIC, INVALIDATE_BY_SYSTEM ]
+      - DELETE_COMMUNICATION:
+      - PROCESS_HISTORY:
+      # ce ne sono 2
+      - FINALIZE_COMMUNICATION:
+          headers: [ ENDED_PROCESS ]
+      - FINALIZE_COMMUNICATION:
+          headers: [ ENDED_PROCESS, SENDING_FISCAL_CODE, DATE_RECEIVED_TIMESTAMP, URL_CALLBACK, PROTOCOL, REPORTING_PERIOD, PREVIOUS_STATE ]
+      - ADD_EFFECTIVE_DEST:
+    event:
+      - EXPIRED_FISCAL_YEAR:
+      - PROCESS_HISTORY:
+      - UPDATE_FISCAL_YEAR:
+          headers: [PAYLOAD_II]
+      - FINISHED_EXPIRED_COMMUNICATIONS:
+      - UPDATE_EFFECTIVE_DEST:
+      - START_EXCEL_DAC7_NATIONAL: # ??
+      - LATE_COMMUNICATION:
+          headers: [ SENDING_FISCAL_CODE, DATE_RECEIVED_TIMESTAMP, PROTOCOL, COM_UID, URL_CALLBACK ]
+      - UPDATE_STATUS: # avvenuto cambio di stato, forse meglio chiamarlo STATUS_UPDATED
+      - ACCEPTED:
+      - REJECTED:
+      - ACCEPTED_NON_CONTRIBUTING:
+      #- CANCELED:
+    boundary:
+#      - EVENT_ERROR
+#      - EVENT_ERROR_DAC6;
+      - ACCEPTED:
+      - REJECTED:
+      - ACCEPTED_NON_CONTRIBUTING:
+      #- CANCELED:
+      #REPLACED;
+      #NEW_INCOMING_REQUEST;
+      - AC: # arriva nuova comunicazione
+          headers: [ MESSAGE_TYPE_INDIC, PAYLOAD_II, REPORTING_PERIOD, SENDING_FISCALE_CODE, DATE_RECEIVED_TIMESTAMP, LATE_COM, SID]
+    #duedate:
+    # - EXPIRED_FISCAL_YEAR
+
+nr:
+  topics:
+    err:
+    command:
+      - CURRENT_COUNTRY:
+      - NEXT_COMMUNICATION:
+      -
+    event:
+      - START_BUILD_MESSAGE_EXPIRED_FY:
+      - START_BUILD_MESSAGE_SPEC_COM:
+      - CLOSE_EXCHANGE_COUNTRY:
+
+res:
+  topics:
+    err:
+    command:
+    event:

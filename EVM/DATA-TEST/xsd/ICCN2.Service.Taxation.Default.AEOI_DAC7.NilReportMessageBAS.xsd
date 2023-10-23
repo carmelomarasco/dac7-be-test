@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://xmlns.ec.eu/BusinessActivityService/AEOI_DAC7/INilReportMessageBAS/V1"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns:servicestype3="http://xmlns.ec.eu/BusinessObjects/AEOI_DAC7/Common/V13">
+  
+  <xs:import namespace="http://xmlns.ec.eu/BusinessObjects/AEOI_DAC7/Common/V13"
+    schemaLocation="NilReportMessageBASServiceType.xsd" />
+
+  <xs:element name="NilReportMessageReqMsg" type="servicestype3:NilReportMessageRequestType" />
+  <xs:element name="NilReportMessageRespMsg" type="servicestype3:NilReportMessageResponseType" />
+
+</xs:schema>

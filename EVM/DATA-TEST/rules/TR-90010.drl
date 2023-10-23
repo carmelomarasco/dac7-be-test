@@ -1,0 +1,31 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.reader.LightweightElement;
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.validation.Constants;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import eu.europa.ec.taxud.dac7.utils.ValidationContextUtils;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+
+dialect "java"
+
+rule "TR-90010"
+
+	agenda-group "TR-90010"
+	auto-focus true
+	when
+	    $element : Element("DPIBody" == getLocalName())
+        $context : ValidationContext()
+        $xpath   : XPath() from $context.getProperty("XPATH")
+    then
+
+        if($context.getProperty(Constants.EU_SPECIFIC_RULES) != null && (Boolean)$context.getProperty(Constants.EU_SPECIFIC_RULES)){
+            $context.setProperty(Constants.DPI_BODY, true);
+        }
+
+end

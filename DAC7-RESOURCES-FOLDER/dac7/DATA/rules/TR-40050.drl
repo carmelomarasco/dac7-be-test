@@ -1,0 +1,47 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import oecd.ties.dpi.v1.INTypeEnumType
+import java.util.Set
+import java.util.HashSet;
+
+dialect "java"
+
+rule "TR-40050"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+	when
+        $elementAPO : Element() from XmlUtils.findElements($context, $element, "//dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator")
+    then
+        Object receivingCountriesObject = $context.getProperty(Constants.RECEIVING_COUNTRY);
+
+        Set<String> receivingCountriesSet = new HashSet<>();
+        if (receivingCountriesObject instanceof String) {
+            receivingCountriesSet.add(receivingCountriesObject.toString());
+        }
+        else{
+            receivingCountriesSet = (Set)receivingCountriesObject;
+        }
+
+        boolean resCountryContainsReceivingCountries = false;
+        List<Element> resCountryCodes = XmlUtils.findElements($context, $elementAPO, "dpi:ResCountryCode");
+        for (final Element elemResCountryCode : resCountryCodes){
+           if (receivingCountriesSet.contains(elemResCountryCode.getTextContent())) {
+               resCountryContainsReceivingCountries = true;
+               break;
+           }
+        }
+        if (!resCountryCodes.isEmpty() && !resCountryContainsReceivingCountries) {
+            String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+            addError($context, ErrorCode.BR_PAR_005, docTypeIndic, $elementAPO);
+        }
+end

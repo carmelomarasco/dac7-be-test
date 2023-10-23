@@ -1,0 +1,79 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import org.apache.commons.lang3.StringUtils;
+import eu.europa.ec.taxud.dac7.validation.Constants
+import eu.europa.ec.taxud.dac7.utils.DroolsUtils
+import java.util.List
+import java.util.Set
+import java.lang.String
+import java.util.HashSet
+import java.util.regex.Matcher
+import java.util.regex.Pattern;
+import org.w3c.dom.Element
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import org.w3c.dom.Node
+import oecd.ties.dpi.v1.DPIMessageTypeIndicEnumType;
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import com.sun.org.apache.xpath.internal.operations.Bool
+
+dialect "java"
+
+rule "TR-20010"
+
+    when
+     $element : Element("DPIBody" == getLocalName())
+     $context : ValidationContext( )
+     $xpath   : XPath() from $context.getProperty("XPATH")
+    then
+    final String messageTypeIndic = (String) $context.getProperty(Constants.MESSAGE_TYPE_INDIC);
+    if (!DPIMessageTypeIndicEnumType.DPI_402.value().equals(messageTypeIndic) &&
+            !DPIMessageTypeIndicEnumType.DPI_403.value().equals(messageTypeIndic)) {
+        //Check in PlatformOperator
+        List<Element> listPO = XmlUtils.findElements($context, $element, "//dpi:PlatformOperator");
+
+        for(Element po : listPO){
+            String assumedReporting = (String) XmlUtils.getObjectValue($context, po, "dpi:AssumedReporting", XPathConstants.STRING);
+            Boolean assumedReportingBoolean;
+            if(StringUtils.isEmpty(assumedReporting)){
+                assumedReportingBoolean = false;
+            } else {
+                assumedReportingBoolean = Boolean.valueOf(assumedReporting);
+            }
+
+            if (!Boolean.FALSE.equals(assumedReportingBoolean)) {
+                String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, po, "dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                addError($context, ErrorCode.BR_OPO_001, docTypeIndic, po);
+            }
+        }
+
+        List<Element> listRS = XmlUtils.findElements($context, $element, "//dpi:ReportableSeller");
+
+        for(Element rs : listRS){
+            String assumedReportingRS = (String) XmlUtils.getObjectValue($context, rs, "dpi:Identity/dpi:EntitySeller/dpi:Standard/dpi:EntSellerID/dpi:AssumedReporting", XPathConstants.STRING);
+            Boolean assumedReportingRSBoolean;
+            if(StringUtils.isEmpty(assumedReportingRS)){
+                assumedReportingRSBoolean = false;
+            } else {
+                assumedReportingRSBoolean = Boolean.valueOf(assumedReportingRS);
+            }
+
+            if (!Boolean.FALSE.equals(assumedReportingRSBoolean)){
+                String docTypeIndicRS = (String) XmlUtils.getChildObjectValue($context, rs, "dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+
+                addError($context, ErrorCode.BR_OPO_001, docTypeIndicRS, rs);
+            }
+        }
+    }
+end

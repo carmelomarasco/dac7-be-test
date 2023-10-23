@@ -1,0 +1,52 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.validation.Constants;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import eu.europa.ec.taxud.dac7.utils.ValidationContextUtils;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import java.lang.String
+import java.util.HashSet
+import java.util.Set
+import java.util.List;
+
+dialect "java"
+
+rule "DAC7-Status-MessageSpecs"
+
+	when
+	    $element : Element("MessageSpec" == getLocalName() && "urn:oecd:ties:dsm:v1" == getNamespaceURI())
+        $context : ValidationContext( )
+        $xpath   : XPath() from $context.getProperty("XPATH")
+        $transmittingCountry: Element() from $xpath.compile("dsm:TransmittingCountry").evaluate($element, XPathConstants.NODE)
+        $messageRefId: String() from $xpath.compile("dsm:MessageRefId").evaluate($element, XPathConstants.STRING)
+        $reportingPeriod: String() from $xpath.compile("dsm:ReportingPeriod").evaluate($element, XPathConstants.STRING)
+
+    then
+    	$context.setProperty(Constants.TRANSMITTING_COUNTRY, $transmittingCountry.getTextContent());
+
+    	List<Element> countries = XmlUtils.findElements($context, $element, "dsm:ReceivingCountry");
+		Set<String> countriesSet = new HashSet<>();
+		for(Element country: countries){
+			countriesSet.add(country.getTextContent());
+		}
+		if(countriesSet.size() == 1){
+			String uniqueReceivingCountry=null;
+			for(String receiving : countriesSet){
+				uniqueReceivingCountry = receiving;
+			}
+			$context.setProperty(Constants.RECEIVING_COUNTRY, uniqueReceivingCountry);
+		}
+		else{
+			$context.setProperty(Constants.RECEIVING_COUNTRY, countriesSet);
+		}
+
+    	$context.setProperty(Constants.MESSAGE_REF_ID, $messageRefId);
+    	$context.setProperty(Constants.REPORTING_PERIOD, $reportingPeriod);
+
+end

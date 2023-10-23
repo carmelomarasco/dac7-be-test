@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InitialMessageRequest xmlns="http://xmlns.ec.eu/BusinessObjects/AEOI_DAC7/Common/V14"
+                      xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                      xmlns:stf="urn:oecd:ties:dpistf:v1"
+                      xmlns:dpi="urn:oecd:ties:dpi:v1">
+    <DPI_OECD>
+    </DPI_OECD>
+</InitialMessageRequest>

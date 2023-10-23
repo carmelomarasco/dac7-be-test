@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://xmlns.ec.eu/BusinessActivityService/AEOI_DAC7/ICorrectionMessageBAS/V1"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns:servicestype1="http://xmlns.ec.eu/BusinessObjects/AEOI_DAC7/Common/V1">
+
+  <xs:import namespace="http://xmlns.ec.eu/BusinessObjects/AEOI_DAC7/Common/V1"
+    schemaLocation="CorrectionMessageBASServiceType.xsd" />
+
+  <xs:element name="CorrectionMessageReqMsg" type="servicestype1:CorrectionMessageRequestType" />
+  <xs:element name="CorrectionMessageRespMsg" type="servicestype1:CorrectionMessageResponseType" />
+
+</xs:schema>

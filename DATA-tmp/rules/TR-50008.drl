@@ -1,0 +1,49 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import org.apache.commons.lang3.StringUtils;
+import eu.europa.ec.taxud.dac7.validation.Constants
+import eu.europa.ec.taxud.dac7.utils.DroolsUtils
+import java.util.List
+import java.util.Set
+import java.lang.String
+import java.util.HashSet
+import java.util.regex.Matcher
+import java.util.regex.Pattern;
+
+dialect "java"
+
+rule "TR-50008"
+extends "DAC7-MessageSpecs"
+agenda-group "DAC7-MessageSpecs"
+auto-focus true
+
+when
+    $transmittingCountryStr : String() from $transmittingCountry.getTextContent()
+    $messageRefIdElem: Element() from $xpath.compile("dpi:MessageRefId").evaluate($element, XPathConstants.NODE)
+then
+	String pattern = "(\\w{2})(\\d{4})(\\w{2}).*";
+	Pattern r = Pattern.compile(pattern);
+	Matcher matcher = r.matcher($messageRefId);
+    if (matcher.matches()) {
+        String sender = matcher.group(1);
+        String year = matcher.group(2);
+        String receiver = matcher.group(3);
+        String reportingPeriodYear = $reportingPeriod.substring(0, 4);
+
+        List<Element> countries = XmlUtils.findElements($context, $element, "dpi:ReceivingCountry");
+		final Set<String> set = DroolsUtils.elementsToSet(countries);
+
+        if (!sender.equals($transmittingCountryStr) || !set.contains(receiver) || !reportingPeriodYear.equals(year)) {
+            addErrorWithoutRefId($context, ErrorCode.BR_MSG_005, $messageRefIdElem);
+        }
+    } else {
+        addErrorWithoutRefId($context, ErrorCode.BR_MSG_005, $messageRefIdElem);
+    }
+end

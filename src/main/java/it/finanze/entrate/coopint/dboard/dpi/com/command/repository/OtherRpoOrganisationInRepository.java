@@ -1,0 +1,9 @@
+package it.finanze.entrate.coopint.dboard.dpi.com.command.repository;
+
+import it.finanze.entrate.coopint.dboard.dpi.common.entity.OtherRpoOrganisationIn;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.stereotype.*;
+
+@Repository (value = "otherRpoOrganisationInRepositoryNazionale")
+public interface OtherRpoOrganisationInRepository extends JpaRepository<OtherRpoOrganisationIn, Long> {
+}

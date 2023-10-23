@@ -1,0 +1,76 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import oecd.ties.dpi.v1.INTypeEnumType
+import eu.europa.ec.taxud.dac7.utils.RuleUtils;
+
+dialect "java"
+
+rule "TR-40090-OPO"
+extends "DAC7-OTHER-PLATFORM-OPERATOR"
+agenda-group "DAC7-OTHER-PLATFORM-OPERATOR"
+auto-focus true
+
+	when
+	    $elemAPO : Element() from XmlUtils.findElements($context, $otherPlatformOperator, "//dpi:AssumedPlatformOperator")
+    then
+        List<Element> tins = XmlUtils.findElements($context, $elemAPO, "dpi:TIN");
+        if (tins.size() > 1) {
+            for (final Element elem : tins) {
+                String unKnown = (String) XmlUtils.getChildObjectValue($context, elem, "./@unknown", XPathConstants.STRING);
+                if (RuleUtils.isParameterProvided(unKnown) && Boolean.TRUE.equals(Boolean.valueOf(unKnown))) {
+                    String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $elemAPO, "dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                    addError($context, ErrorCode.BR_PAR_010, docTypeIndic, elem);
+                }
+            }
+        }
+end
+
+rule "TR-40090-RS"
+extends "DAC7-REPORTABLE-SELLER"
+agenda-group "DAC7-REPORTABLE-SELLER"
+auto-focus true
+
+	when
+	    $elemRS : Element() from XmlUtils.findElements($context, $reportableSeller, "//dpi:Identity/dpi:IndividualSeller/dpi:Standard/dpi:IndSellerID")
+	    or
+	    $elemRS : Element() from XmlUtils.findElements($context, $reportableSeller, "//dpi:Identity/dpi:EntitySeller/dpi:Standard/dpi:EntSellerID")
+    then
+        List<Element> tins = XmlUtils.findElements($context, $elemRS, "dpi:TIN");
+
+        if (tins.size() > 1){
+           for (final Element elem : tins) {
+               String unKnown = (String) XmlUtils.getChildObjectValue($context, elem, "./@unknown", XPathConstants.STRING);
+               if (RuleUtils.isParameterProvided(unKnown)&& Boolean.TRUE.equals(Boolean.valueOf(unKnown))) {
+                   String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $reportableSeller, "dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                   addError($context, ErrorCode.BR_PAR_010, docTypeIndic, elem);
+               }
+           }
+        }
+end
+
+rule "TR-40090-PO"
+extends "DAC7-PLATFORM-OPERATOR"
+agenda-group "DAC7-PLATFORM-OPERATOR"
+auto-focus true
+
+	when
+    then
+        List<Element> tins = XmlUtils.findElements($context, $platformOperator, "dpi:TIN");
+        if (tins.size() > 1) {
+            for (final Element elem : tins) {
+                String unKnown = (String) XmlUtils.getChildObjectValue($context, elem, "./@unknown", XPathConstants.STRING);
+                if (RuleUtils.isParameterProvided(unKnown) && Boolean.TRUE.equals(Boolean.valueOf(unKnown))) {
+                    String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $platformOperator, "dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                    addError($context, ErrorCode.BR_PAR_010, docTypeIndic, elem);
+                }
+            }
+        }
+end

@@ -1,0 +1,45 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import java.util.Date
+import java.util.Calendar
+import java.text.SimpleDateFormat;
+import org.w3c.dom.Node
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import java.util.Set
+import java.util.HashSet
+import oecd.ties.isodpitypes.v1.MSCountryCodeType
+import oecd.ties.dpi.v1.PropertyListingType
+import oecd.ties.dpi.v1.DPIPropertyTypeEnumType;
+
+dialect "java"
+
+rule "TR-30060"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+	when
+        $elementRS : Element() from XmlUtils.findElements($context, $element, "//dpi:ReportableSeller/dpi:RelevantActivities")
+    then
+       List<Element> relevantActivities = XmlUtils.findElements($context, $elementRS, "dpi:ImmovableProperty/dpi:PropertyListing");
+       for (final Element relevantActElem : relevantActivities){
+
+           String propertyType = (String) XmlUtils.getObjectValue($context, relevantActElem, "dpi:PropertyType", XPathConstants.STRING);
+
+           if (!DPIPropertyTypeEnumType.DPI_910.value().equals(propertyType)){
+               String otherPropertyType = (String) XmlUtils.getObjectValue($context, relevantActElem, "dpi:OtherPropertyType", XPathConstants.STRING);
+               if (RuleUtils.isParameterProvided(otherPropertyType)){
+                   String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                   addError($context, ErrorCode.BR_RS_006, docTypeIndic, $elementRS);
+               }
+           }
+       }
+end

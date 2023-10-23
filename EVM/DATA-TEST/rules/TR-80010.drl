@@ -1,0 +1,150 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import oecd.ties.dpi.v1.INTypeEnumType
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import oecd.ties.dpistf.v1.OECDDocTypeIndicEnumType
+import eu.europa.ec.taxud.dac7.utils.ValidationContextUtils
+import oecd.ties.dpi.v1.MessageTypeEnumType
+import oecd.ties.dpi.v1.DPIMessageTypeIndicEnumType
+import java.util.ArrayList
+import java.util.stream.Collectors;
+
+
+rule "TR-80010-Mixed"
+auto-focus true
+when
+	$elemBody : Element("DPIBody" == getLocalName())
+    $context : ValidationContext()
+    $xpath   : XPath() from $context.getProperty("XPATH")
+    $element : Element() from $xpath.compile("dpi:PlatformOperator").evaluate($elemBody, XPathConstants.NODE)
+    or
+    $element : Element() from $xpath.compile("dpi:OtherPlatformOperators").evaluate($elemBody, XPathConstants.NODE)
+    or
+    $element : Element() from $xpath.compile("dpi:ReportableSeller").evaluate($elemBody, XPathConstants.NODE)
+then
+	if ($context.getProperty(Constants.TR_80010_FIRED) != null){
+		return;
+	}
+
+	Element docTypeElement = (Element)$element.getElementsByTagNameNS($xpath.getNamespaceContext().getNamespaceURI("stf"), "DocTypeIndic").item(0);
+	String docTypeValue = docTypeElement.getTextContent();
+	if (OECDDocTypeIndicEnumType.OECD_0.value().equals(docTypeValue)) {
+        return;
+    }
+
+	if ($context.getProperty(Constants.TR_80010_TYPE) == null){
+		$context.setProperty(Constants.TR_80010_TYPE, docTypeValue);
+	}
+	else {
+		String previousValue = (String)$context.getProperty(Constants.TR_80010_TYPE);
+
+        final String firstDocTypeExpected = ValidationContextUtils.getValueBasedOnValidationMode(OECDDocTypeIndicEnumType.OECD_11.value(), OECDDocTypeIndicEnumType.OECD_1.value(), $context);
+		final String secondDocTypeExpected = ValidationContextUtils.getValueBasedOnValidationMode(OECDDocTypeIndicEnumType.OECD_12.value(), OECDDocTypeIndicEnumType.OECD_2.value(), $context);
+        final String thirdDocTypeExpected = ValidationContextUtils.getValueBasedOnValidationMode(OECDDocTypeIndicEnumType.OECD_13.value(), OECDDocTypeIndicEnumType.OECD_3.value(), $context);
+
+        if (docTypeValue.equals(firstDocTypeExpected) && (previousValue.equals(secondDocTypeExpected) || previousValue.equals(thirdDocTypeExpected))){
+			$context.setProperty(Constants.TR_80010_FIRED, Boolean.TRUE);
+			addErrorWithoutRefId($context, ErrorCode.BR_TR_80010, docTypeElement);
+		}
+
+		if ((docTypeValue.equals(thirdDocTypeExpected) || docTypeValue.equals(secondDocTypeExpected))  && previousValue.equals(firstDocTypeExpected)){
+			$context.setProperty(Constants.TR_80010_FIRED, Boolean.TRUE);
+			addErrorWithoutRefId($context, ErrorCode.BR_TR_80010, docTypeElement);
+		}
+	}
+end
+
+
+rule "TR-80010-DPI-401"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+when
+then
+
+    final String messageTypeIndic = (String) $context.getProperty(Constants.MESSAGE_TYPE_INDIC);
+
+    if ($context.getProperty(Constants.TR_80010_FIRED) != null){
+		return;
+	}
+
+    if (DPIMessageTypeIndicEnumType.DPI_401.value().equals(messageTypeIndic)) {
+         final List<Element> docTypeIndics = XmlUtils.findElements($context, $element, "dpi:PlatformOperator/dpi:DocSpec/stf:DocTypeIndic");
+         docTypeIndics.addAll(XmlUtils.findElements($context, $element, "dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator/dpi:DocSpec/stf:DocTypeIndic"));
+         docTypeIndics.addAll(XmlUtils.findElements($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocTypeIndic"));
+
+         for (final Element elem : docTypeIndics){
+             if (OECDDocTypeIndicEnumType.OECD_3.value().equals(elem.getTextContent())){
+                 $context.setProperty(Constants.TR_80010_FIRED, Boolean.TRUE);
+                 addErrorWithoutRefId($context, ErrorCode.BR_TR_80010, elem);
+             }
+         }
+    }
+end
+
+
+rule "TR-80010-DPI-402"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+when
+then
+    final String messageTypeIndic = (String) $context.getProperty(Constants.MESSAGE_TYPE_INDIC);
+
+    if ($context.getProperty(Constants.TR_80010_FIRED) != null){
+        return;
+    }
+
+    if (DPIMessageTypeIndicEnumType.DPI_402.value().equals(messageTypeIndic)) {
+         final List<Element> docTypeIndics = XmlUtils.findElements($context, $element, "dpi:PlatformOperator/dpi:DocSpec/stf:DocTypeIndic");
+         docTypeIndics.addAll(XmlUtils.findElements($context, $element, "dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator/dpi:DocSpec/stf:DocTypeIndic"));
+         docTypeIndics.addAll(XmlUtils.findElements($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocTypeIndic"));
+
+         for (final Element elem : docTypeIndics){
+              if (OECDDocTypeIndicEnumType.OECD_1.value().equals(elem.getTextContent())){
+                  $context.setProperty(Constants.TR_80010_FIRED, Boolean.TRUE);
+                  addErrorWithoutRefId($context, ErrorCode.BR_TR_80010, elem);
+              }
+         }
+    }
+
+end
+
+
+rule "TR-80010-DPI-403"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+when
+then
+    final String messageTypeIndic = (String) $context.getProperty(Constants.MESSAGE_TYPE_INDIC);
+
+    if ($context.getProperty(Constants.TR_80010_FIRED) != null){
+		return;
+	}
+
+    if (DPIMessageTypeIndicEnumType.DPI_403.value().equals(messageTypeIndic)) {
+         final List<Element> docTypeIndics = XmlUtils.findElements($context, $element, "dpi:PlatformOperator/dpi:DocSpec/stf:DocTypeIndic");
+         docTypeIndics.addAll(XmlUtils.findElements($context, $element, "dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator/dpi:DocSpec/stf:DocTypeIndic"));
+         docTypeIndics.addAll(XmlUtils.findElements($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocTypeIndic"));
+
+         for (final Element elem : docTypeIndics){
+             if (OECDDocTypeIndicEnumType.OECD_2.value().equals(elem.getTextContent())|| OECDDocTypeIndicEnumType.OECD_3.value().equals(elem.getTextContent())){
+                 $context.setProperty(Constants.TR_80010_FIRED, Boolean.TRUE);
+                 addErrorWithoutRefId($context, ErrorCode.BR_TR_80010, elem);
+             }
+         }
+    }
+
+end

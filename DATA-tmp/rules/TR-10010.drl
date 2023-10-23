@@ -1,0 +1,39 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import org.apache.commons.lang3.StringUtils;
+import eu.europa.ec.taxud.dac7.validation.Constants
+import eu.europa.ec.taxud.dac7.utils.DroolsUtils
+import java.util.List
+import java.util.Set
+import java.lang.String
+import java.util.HashSet
+import java.util.regex.Matcher
+import java.util.regex.Pattern;
+import org.w3c.dom.Element
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import org.w3c.dom.Node;
+
+dialect "java"
+
+rule "TR-10010"
+extends "DAC7-MessageSpecs"
+agenda-group "DAC7-MessageSpecs"
+auto-focus true
+
+    when
+        $messageRefIdElem: Element() from $xpath.compile("dpi:MessageRefId").evaluate($element, XPathConstants.NODE)
+    then
+
+    Node sendingEntityIN = (Node) XmlUtils.getChildObjectValue($context, $element, "dpi:SendingEntityIN", XPathConstants.NODE);
+
+    if (RuleUtils.isParameterProvided(sendingEntityIN)){
+        addErrorWithoutRefId($context, ErrorCode.BR_MSG_001, $messageRefIdElem);
+    }
+end

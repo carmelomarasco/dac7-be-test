@@ -1,0 +1,51 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import org.w3c.dom.Element;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import org.apache.commons.lang3.StringUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.Constants
+import oecd.ties.dpi.v1.DPIMessageTypeIndicEnumType
+
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import java.util.Arrays
+import oecd.ties.dpistf.v1.OECDDocTypeIndicEnumType
+
+dialect "java"
+
+rule "TR-80004"
+auto-focus true
+	
+when
+	$element : Element("DPIBody" == getLocalName())
+    $context : ValidationContext()
+    $xpath   : XPath() from $context.getProperty("XPATH")
+then
+    final List<Element> docSpecs = XmlUtils.findElements($context, $element, "dpi:PlatformOperator/dpi:DocSpec");
+    docSpecs.addAll(XmlUtils.findElements($context, $element, "dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator/dpi:DocSpec"));
+    docSpecs.addAll(XmlUtils.findElements($context, $element, "//dpi:ReportableSeller/dpi:DocSpec"));
+
+    for (final Element elem : docSpecs){
+        final List<String> docTypeIndicResentInitial = Arrays.asList(OECDDocTypeIndicEnumType.OECD_0.value(),
+        OECDDocTypeIndicEnumType.OECD_1.value() );
+
+        String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, elem, "stf:DocTypeIndic", XPathConstants.STRING);
+        if (docTypeIndicResentInitial.contains(docTypeIndic)) {
+             String corrDocRefId = (String) XmlUtils.getChildObjectValue($context, elem, "stf:CorrDocRefId", XPathConstants.STRING);
+            if (RuleUtils.isParameterProvided(corrDocRefId)){
+                addErrorWithoutRefId($context, ErrorCode.BR_TR_80004, elem);
+            }
+        }
+    }
+
+end

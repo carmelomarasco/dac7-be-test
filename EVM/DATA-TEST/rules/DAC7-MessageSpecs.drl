@@ -1,0 +1,69 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.validation.Constants;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import eu.europa.ec.taxud.dac7.utils.ValidationContextUtils;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import java.util.List
+import java.util.Set
+import oecd.ties.dpi.v1.DPIMessageTypeIndicEnumType
+import java.util.HashSet
+
+dialect "java"
+
+function void addError(ValidationContext context, ErrorCode errorCode,  String docRefId,  Element element) {
+	ValidationContextUtils.addError(context, errorCode, docRefId,  element);
+}
+
+function void addErrorWithoutRefId(ValidationContext context, ErrorCode errorCode, Element element) {
+	ValidationContextUtils.addErrorWithoutRefId(context, errorCode, element);
+}
+
+function boolean isValidYear(int reportingPeriod, int actualYear) {
+    return actualYear == reportingPeriod || actualYear == reportingPeriod - 1;
+}
+
+rule "DAC7-MessageSpecs"
+extends "No-Status-Message"
+/*
+	Collects information from Message specs
+*/	 
+	when
+        $context : ValidationContext( )
+        $xpath   : XPath() from $context.getProperty("XPATH")
+        $transmittingCountry: Element() from $xpath.compile("dpi:TransmittingCountry").evaluate($element, XPathConstants.NODE)
+        $receivingCountry: Element() from $xpath.compile("dpi:ReceivingCountry").evaluate($element, XPathConstants.NODE)
+        $messageRefId: String() from $xpath.compile("dpi:MessageRefId").evaluate($element, XPathConstants.STRING)
+        $reportingPeriod: String() from $xpath.compile("dpi:ReportingPeriod").evaluate($element, XPathConstants.STRING)
+        $messageTypeIndic: Element() from $xpath.compile("dpi:MessageTypeIndic").evaluate($element, XPathConstants.NODE)
+    then
+        List<Element> countries = XmlUtils.findElements($context, $element, "dpi:ReceivingCountry");
+        Set<String> countriesSet = new HashSet<String>();
+        for(Element country: countries){
+            countriesSet.add(country.getTextContent());
+        }
+        if(countriesSet.size() == 1){
+        	String uniqueReceivingCountry=null;
+            for(String receiving : countriesSet){
+                uniqueReceivingCountry = receiving;
+            }
+            $context.setProperty(Constants.RECEIVING_COUNTRY, uniqueReceivingCountry);
+        }
+        else{
+            $context.setProperty(Constants.RECEIVING_COUNTRY, countriesSet);
+        }
+        $context.setProperty(Constants.MESSAGE_TYPE_INDIC, $messageTypeIndic.getTextContent());
+    	$context.setProperty(Constants.TRANSMITTING_COUNTRY, $transmittingCountry.getTextContent());
+    	$context.setProperty(Constants.MESSAGE_REF_ID, $messageRefId);
+    	$context.setProperty(Constants.REPORTING_PERIOD, $reportingPeriod);
+    	String msgTypeIndic = (String) $xpath.compile("dpi:MessageTypeIndic").evaluate($element, XPathConstants.STRING);
+        $context.setProperty(Constants.NEED_BODY, DPIMessageTypeIndicEnumType.DPI_401.value().equals(msgTypeIndic)
+         || DPIMessageTypeIndicEnumType.DPI_402.value().equals(msgTypeIndic));
+    	ValidationContextUtils.logMessageSpecs(msgTypeIndic, $messageRefId, $transmittingCountry.getTextContent(), $receivingCountry.getTextContent());
+end

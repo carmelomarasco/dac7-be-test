@@ -1,0 +1,46 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import java.util.Date
+import java.util.Calendar
+import java.text.SimpleDateFormat;
+import org.w3c.dom.Node
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
+dialect "java"
+
+rule "TR-40140"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+	when
+        $elementIS : Element() from XmlUtils.findElements($context, $element, "//dpi:ReportableSeller/dpi:Identity/dpi:IndividualSeller/dpi:Standard/dpi:IndSellerID")
+    then
+        List<Element> tin = XmlUtils.findElements($context, $elementIS, "dpi:TIN");
+        boolean containsUnknownTIN = false;
+        for (final Element elem : tin){
+            String unKnown = (String) XmlUtils.getChildObjectValue($context, elem, "./@unknown", XPathConstants.STRING);
+
+            if (RuleUtils.isParameterProvided(unKnown) && Boolean.TRUE.equals(Boolean.valueOf(unKnown))){
+                containsUnknownTIN = true;
+                break;
+            }
+        }
+
+        if (!tin.isEmpty() && containsUnknownTIN) {
+            Node birthPlace = (Node) XmlUtils.getChildObjectValue($context, $elementIS, "dpi:BirthInfo/dpi:BirthPlace", XPathConstants.NODE);
+            if (!RuleUtils.isParameterProvided(birthPlace)) {
+                String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                addError($context, ErrorCode.BR_PAR_015, docTypeIndic, $elementIS);
+            }
+        }
+end

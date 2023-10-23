@@ -1,0 +1,34 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import oecd.ties.dpi.v1.INTypeEnumType
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import java.util.HashSet
+import oecd.ties.dpistf.v1.OECDLegalAddressTypeEnumType;
+
+dialect "java"
+
+rule "TR-60010"
+extends "DAC7-PLATFORM-OPERATOR"
+agenda-group "DAC7-PLATFORM-OPERATOR"
+auto-focus true
+
+	when
+    then
+        List<Element> addresses = XmlUtils.findElements($context, $platformOperator, "dpi:Address");
+        HashSet<String> legalAddressTypeSet = new HashSet<>();
+        for (final Element elem : addresses) {
+            legalAddressTypeSet.add((String) XmlUtils.getChildObjectValue($context, elem, "./@legalAddressType", XPathConstants.STRING));
+        }
+        if (!legalAddressTypeSet.contains(OECDLegalAddressTypeEnumType.OECD_304.value())) {
+            String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $platformOperator, "dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+            addError($context, ErrorCode.BR_ADD_001, docTypeIndic, $element);
+        }
+end

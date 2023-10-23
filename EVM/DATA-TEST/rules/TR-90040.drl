@@ -1,0 +1,50 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import org.w3c.dom.Element;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import org.apache.commons.lang3.StringUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import oecd.ties.dpistf.v1.OECDDocTypeIndicEnumType
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import eu.europa.ec.taxud.dac7.validation.Constants
+import oecd.ties.dpi.v1.DPIMessageTypeIndicEnumType;
+
+dialect "java"
+
+rule "TR-90040"
+auto-focus true
+	
+when
+	$element : Element("DPIBody" == getLocalName())
+    $context : ValidationContext()
+    $xpath   : XPath() from $context.getProperty("XPATH")
+then
+    String messageTypeIndic = (String) $context.getProperty(Constants.MESSAGE_TYPE_INDIC);
+    if(DPIMessageTypeIndicEnumType.DPI_402.value().equals(messageTypeIndic)){
+        final List<Element> docRefIds = XmlUtils.findElements($context, $element, "dpi:PlatformOperator/dpi:DocSpec");
+            docRefIds.addAll(XmlUtils.findElements($context, $element, "dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator/dpi:DocSpec"));
+            docRefIds.addAll(XmlUtils.findElements($context, $element, "dpi:ReportableSeller/dpi:DocSpec"));
+
+            for (final Element elem : docRefIds){
+                String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, elem, "stf:DocTypeIndic", XPathConstants.STRING);
+                if(OECDDocTypeIndicEnumType.OECD_2.value().equals(docTypeIndic) || OECDDocTypeIndicEnumType.OECD_3.value().equals(docTypeIndic) ) {
+                    String corrDocRefId = (String) XmlUtils.getChildObjectValue($context, elem, "stf:CorrDocRefId", XPathConstants.STRING);
+                    if (StringUtils.isEmpty(corrDocRefId)){
+                        String docRefId = (String) XmlUtils.getChildObjectValue($context, elem, "stf:DocRefId", XPathConstants.STRING);
+                        addError($context, ErrorCode.BR_TR_90040, docRefId, elem);
+                    }
+                }
+            }
+    }
+
+end

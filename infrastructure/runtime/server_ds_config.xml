@@ -1,0 +1,14 @@
+<server>
+
+    <library id="SharedLibrary_Oracle">
+        <fileset dir="/config/lib/oracle" includes="ojdbc7-12.1.0.2.jar"/>
+    </library>
+
+    <dataSource jndiName="jdbc/oracleDboardDpiComCommand" transactional="false">
+        <jdbcDriver libraryRef="SharedLibrary_Oracle"/>
+        <!-- <properties.oracle driverType="thin" URL="${DB_URL}" user="${DB_USERNAME}" password="${DB_PASSWORD}"/> -->
+        <properties.oracle driverType="thin" URL="${DB_URL}" user="DBOARD_DPI_NATIONAL" password="DBOARD_DPI_NATIONAL"/>
+    </dataSource>
+
+
+</server>

@@ -1,0 +1,28 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import oecd.ties.dpi.v1.INTypeEnumType;
+
+dialect "java"
+
+rule "TR-40060"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+	when
+        $elementIS : Element() from XmlUtils.findElements($context, $element, "//dpi:ReportableSeller/dpi:Identity/dpi:EntitySeller/dpi:Standard/dpi:EntSellerID")
+    then
+        List<Element> resCountryCodes = XmlUtils.findElements($context, $elementIS, "./dpi:ResCountryCode");
+        if (resCountryCodes.isEmpty()) {
+            String docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+            addError($context, ErrorCode.BR_PAR_006, docTypeIndic, $elementIS);
+        }
+end

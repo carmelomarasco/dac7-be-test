@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://xmlns.ec.eu/BusinessActivityService/AEOI_DAC7/IInitialMessageBAS/V1"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:servicestype2="http://xmlns.ec.eu/BusinessObjects/AEOI_DAC7/Common/V14">
+
+  <xs:import namespace="http://xmlns.ec.eu/BusinessObjects/AEOI_DAC7/Common/V14"
+    schemaLocation="InitialMessageBASServiceType.xsd" />
+
+  <xs:element name="InitialMessageReqMsg" type="servicestype2:InitialMessageRequestType" />
+  <xs:element name="InitialMessageRespMsg" type="servicestype2:InitialMessageResponseType" />
+
+</xs:schema>

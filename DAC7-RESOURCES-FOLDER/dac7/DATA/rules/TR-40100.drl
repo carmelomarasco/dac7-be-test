@@ -1,0 +1,61 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import eu.europa.ec.taxud.dac7.validation.Constants
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import java.util.stream.Collectors
+import oecd.ties.isodpitypes.v1.MSCountryCodeType
+import oecd.ties.dpi.v1.INTypeEnumType
+import eu.europa.ec.taxud.dac7.utils.RuleUtils;
+
+dialect "java"
+
+rule "TR-40100"
+extends "DAC7-DPI-BODY"
+agenda-group "DAC7-DPI-BODY"
+auto-focus true
+
+	when
+
+    then
+
+        if($context.getProperty(Constants.EU_SPECIFIC_RULES) != null && !(Boolean)$context.getProperty(Constants.EU_SPECIFIC_RULES)){
+            return;
+        }
+
+        boolean addressWithinEU = false;
+        List<Element> countryCodeList = XmlUtils.findElements($context, $element, "//dpi:PlatformOperator/dpi:Address/dpi:CountryCode");
+        for (final Element countryCode : countryCodeList) {
+            try {
+                // Is a Member State ?
+                MSCountryCodeType.valueOf(countryCode.getTextContent());
+                addressWithinEU = true;
+            } catch (Exception e){
+                // Not a Member State
+            }
+        }
+
+        // Reporting Platform has an address within EU.
+        String docTypeIndic;
+        if (addressWithinEU) {
+            List<Element> tins = XmlUtils.findElements($context, $element, "//dpi:PlatformOperator/dpi:TIN");
+            if (tins.isEmpty()){
+                docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:PlatformOperator/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                addError($context, ErrorCode.BR_PAR_011, docTypeIndic, $element);
+            } else {
+                for (final Element elem : tins){
+                   String unKnown = (String) XmlUtils.getChildObjectValue($context, elem, "./@unknown", XPathConstants.STRING);
+                   if (RuleUtils.isParameterProvided(unKnown) && Boolean.TRUE.equals(Boolean.valueOf(unKnown))) {
+                       docTypeIndic = (String) XmlUtils.getChildObjectValue($context, $element, "dpi:PlatformOperator/dpi:DocSpec/stf:DocRefId", XPathConstants.STRING);
+                       addError($context, ErrorCode.BR_PAR_011, docTypeIndic, $element);
+                       break;
+                   }
+                }
+            }
+        }
+end

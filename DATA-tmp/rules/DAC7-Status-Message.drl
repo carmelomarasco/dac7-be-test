@@ -1,0 +1,25 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import eu.europa.ec.taxud.dac7.validation.Constants;
+import eu.europa.ec.taxud.dac7.validation.ErrorCode;
+import eu.europa.ec.taxud.dac7.utils.ValidationContextUtils;
+import eu.europa.ec.taxud.dac7.utils.XmlUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Element;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+
+
+dialect "java"
+
+
+rule "DAC7-Status-Message"
+auto-focus true
+	when
+	    $element : Element("DSMBody" == getLocalName() && "urn:oecd:ties:dsm:v1" == getNamespaceURI())
+        $context : ValidationContext( )
+        $xpath   : XPath() from $context.getProperty("XPATH")
+    then
+end

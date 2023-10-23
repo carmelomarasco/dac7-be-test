@@ -1,0 +1,44 @@
+package ec.dgtaxud.dac.val
+
+import eu.europa.ec.taxud.validation.ValidationContext;
+import eu.europa.ec.taxud.validation.ValidationError;
+import org.w3c.dom.Element;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants
+import org.apache.commons.lang3.StringUtils
+import eu.europa.ec.taxud.dac7.validation.ErrorCode
+import java.util.List
+import eu.europa.ec.taxud.dac7.utils.XmlUtils
+import eu.europa.ec.taxud.dac7.validation.Constants
+import oecd.ties.dpi.v1.DPIMessageTypeIndicEnumType
+
+import eu.europa.ec.taxud.dac7.utils.RuleUtils
+import oecd.ties.dpistf.v1.OECDDocTypeIndicEnumType
+
+dialect "java"
+
+rule "TR-80008"
+auto-focus true
+	
+when
+	$element : Element("DPIBody" == getLocalName())
+    $context : ValidationContext()
+    $xpath   : XPath() from $context.getProperty("XPATH")
+then
+    final List<Element> docTypeIndics = XmlUtils.findElements($context, $element, "dpi:OtherPlatformOperators/dpi:AssumedPlatformOperator/dpi:DocSpec/stf:DocTypeIndic");
+    docTypeIndics.addAll(XmlUtils.findElements($context, $element, "dpi:ReportableSeller/dpi:DocSpec/stf:DocTypeIndic"));
+    final String messageTypeIndic = (String) $context.getProperty(Constants.MESSAGE_TYPE_INDIC);
+
+    for (final Element elem : docTypeIndics){
+
+        if (DPIMessageTypeIndicEnumType.DPI_402.value().equals(messageTypeIndic) && OECDDocTypeIndicEnumType.OECD_0.value().equals(elem.getTextContent())) {
+             addErrorWithoutRefId($context, ErrorCode.BR_TR_80008, elem);
+        }
+    }
+
+end
